@@ -1,0 +1,32 @@
+:root { --bg:#0f172a; --card:#1e293b; --txt:#e2e8f0; --mut:#94a3b8; --ok:#34d399; --err:#f87171; --acc:#38bdf8; --warn:#fbbf24; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--txt); padding:16px; }
+h1 { font-size:1.2rem; margin:0 0 12px; }
+.grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); max-width:1200px; margin:auto; }
+.card { background:var(--card); border-radius:12px; padding:16px; min-width:0; }
+.card h2 { margin:0 0 10px; font-size:.95rem; color:var(--mut); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+.derecha { float:right; text-transform:none; letter-spacing:0; }
+label { display:block; font-size:.85rem; color:var(--mut); margin-bottom:4px; }
+select { padding:8px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:var(--txt); }
+.card > select { width:100%; margin-bottom:10px; }
+button { padding:10px 16px; border:0; border-radius:8px; color:#0f172a; font-weight:700; cursor:pointer; }
+button.iniciar { background:var(--ok); } button.detener { background:var(--err); }
+.bpm { font-size:4rem; font-weight:800; line-height:1; color:var(--ok); }
+.bpm small { font-size:1rem; color:var(--mut); font-weight:400; }
+.estado { font-size:.9rem; margin:8px 0; }
+.ok { color:var(--ok); } .err { color:var(--err); } .warn { color:var(--warn); }
+pre { background:#0f172a; padding:10px; border-radius:8px; font-size:.78rem; overflow:auto; max-height:230px; margin:8px 0 0; white-space:pre-wrap; word-break:break-all; }
+table { width:100%; border-collapse:collapse; font-size:.82rem; }
+th, td { text-align:left; padding:5px 6px; border-bottom:1px solid #334155; }
+th { color:var(--mut); font-weight:600; }
+a { color:var(--acc); }
+.full { grid-column: 1 / -1; }
+.checks { display:grid; grid-template-columns: 1fr 1fr; gap:6px 12px; margin-bottom:12px; }
+.checks label { display:flex; gap:8px; align-items:flex-start; color:var(--txt); margin:0; cursor:pointer; line-height:1.25; }
+.checks input { margin-top:3px; }
+.checks small { display:block; color:var(--mut); font-size:.75rem; }
+.controles { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-bottom:10px; font-size:.85rem; color:var(--mut); }
+.controles input[type=range] { flex:1; min-width:220px; }
+.en-linea { display:flex; gap:6px; margin:0; align-items:center; }
+.grafico { height:210px; margin-bottom:6px; }
+.tabla-scroll { overflow-x:auto; }

@@ -1,11 +1,22 @@
-<script setup></script>
+<script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { detenerSondeo, iniciarSondeo } from './store.js'
+import PanelSesion from './components/PanelSesion.vue'
+import UltimoPaquete from './components/UltimoPaquete.vue'
+import GraficoSesion from './components/GraficoSesion.vue'
+import TablaSesiones from './components/TablaSesiones.vue'
+
+const grafico = ref(null)
+onMounted(iniciarSondeo)
+onBeforeUnmount(detenerSondeo)
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <h1>Polar Verity Sense → Plataforma de gestión de datos</h1>
+  <div class="grid">
+    <PanelSesion />
+    <UltimoPaquete />
+    <GraficoSesion ref="grafico" />
+    <TablaSesiones @ver="grafico?.ver($event)" />
+  </div>
 </template>
-
-<style scoped></style>

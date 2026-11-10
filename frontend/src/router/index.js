@@ -1,9 +1,9 @@
-import { createRouter, createWebHistory, routerKey } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
-
-import Inicio from '/views/inicio.vue'
-import Grabacion from '../../views/grabacion.vue'
-import Sesiones from '../../views/sesiones.vue'
+import Inicio      from '../../views/inicio.vue'
+import Grabacion   from '../../views/grabacion.vue'
+import Sesiones    from '../../views/sesiones.vue'
+import Vinculacion from '../../views/vinculacion.vue'
 
 const routes = [
     {
@@ -20,6 +20,11 @@ const routes = [
         path: '/sesiones',
         name: 'Sesiones',
         component: Sesiones
+    },
+    {
+        path: '/vinculacion',
+        name: 'Vinculacion',
+        component: Vinculacion
     }
 ]
 

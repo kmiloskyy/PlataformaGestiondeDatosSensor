@@ -14,6 +14,9 @@ import { RouterLink } from 'vue-router'
       <li>
         <RouterLink to="/sesiones">Sesiones</RouterLink>
       </li>
+      <li>
+        <RouterLink to="/vinculacion">Vinculación</RouterLink>
+      </li>
     </ul>
   </nav>
 </template>
@@ -24,7 +27,7 @@ import { RouterLink } from 'vue-router'
   align-items: center;
   justify-content: space-between;
   padding: 0.8rem 2rem;
-  background: #1a1a2e;
+  background: #000000;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   position: sticky;
   top: 0;

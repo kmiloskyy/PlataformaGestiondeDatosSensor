@@ -75,6 +75,7 @@ function toggleGrabar() {
       </div>
 
       <div class="empty-grabaciones">
+        <span>📡</span>
         <p>Aún no hay grabaciones. Pulsa «Iniciar grabación» y aparecerán aquí.</p>
       </div>
     </section>

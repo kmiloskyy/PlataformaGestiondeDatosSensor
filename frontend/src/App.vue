@@ -1,11 +1,22 @@
-<script setup></script>
+<script setup>
+import { RouterView } from 'vue-router'
+import Navbar from './components/navbar.vue'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <Navbar />
+  <RouterView />
 </template>
 
-<style scoped></style>
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #f4f6fb;
+  color: #111;
+}
+</style>

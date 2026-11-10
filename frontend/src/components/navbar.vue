@@ -3,63 +3,92 @@ import { RouterLink } from 'vue-router'
 </script>
 
 <template>
-  <nav class="navbar">
-    <div class="navbar-brand">
-      <RouterLink to="/">Gestor</RouterLink>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2 class="logo">Gestor<span class="punto">.</span></h2>
     </div>
-    <ul class="navbar-links">
-      <li>
-        <RouterLink to="/grabacion">Grabar</RouterLink>
-      </li>
-      <li>
-        <RouterLink to="/sesiones">Sesiones</RouterLink>
-      </li>
-    </ul>
-  </nav>
+    
+    <nav class="sidebar-nav">
+      <!-- Vue Router le agregará automáticamente la clase "router-link-active" a la ruta en la que estés -->
+      <RouterLink to="/" class="nav-link">Inicio</RouterLink>
+      <RouterLink to="/grabacion" class="nav-link">Grabación</RouterLink>
+      <RouterLink to="/sesiones" class="nav-link">Mis Sesiones</RouterLink>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p class="version">v1.0.0</p>
+    </div>
+  </aside>
 </template>
 
 <style scoped>
-.navbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.8rem 2rem;
-  background: #1a1a2e;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  position: sticky;
+.sidebar {
+  width: 250px;
+  height: 100vh;
+  background: #1a1a2e; /* Mismo azul oscuro del inicio */
+  color: #fff;
+  position: fixed;
   top: 0;
-  z-index: 100;
-}
-
-.navbar-brand a {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #e94560;
-  text-decoration: none;
-  letter-spacing: 1px;
-}
-
-.navbar-links {
+  left: 0;
   display: flex;
-  gap: 1rem;
-  list-style: none;
+  flex-direction: column;
+  border-right: 1px solid #2a2a4a;
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.logo {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
   margin: 0;
-  padding: 0;
+}
+.logo .punto {
+  color: #e94560; /* Toque rojo deportivo */
 }
 
-.navbar-links a {
-  color: #c9d1d9;
+.sidebar-nav {
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1; /* Empuja el footer hacia abajo */
+}
+
+.nav-link {
+  color: #cbd5e1;
   text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 500;
-  padding: 0.4rem 1.2rem;
-  border-radius: 6px;
-  transition: background 0.2s, color 0.2s;
+  padding: 0.85rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease;
 }
 
-.navbar-links a:hover,
-.navbar-links a.router-link-active {
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding-left: 1.5rem; /* Pequeño efecto de movimiento al pasar el mouse */
+}
+
+/* Vue Router aplica esta clase automáticamente al link de la página actual */
+.nav-link.router-link-exact-active {
   background: #e94560;
   color: #fff;
+}
+
+.sidebar-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+
+.version {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin: 0;
 }
 </style>

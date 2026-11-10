@@ -19,19 +19,16 @@ import { RouterLink } from 'vue-router'
     <section class="categorias">
 
       <RouterLink to="/grabacion" class="cat-card">
-        <div class="icono">⏺</div>
         <h3>Grabación</h3>
         <p>Inicia y controla sesiones de captura de datos en tiempo real.</p>
       </RouterLink>
 
       <RouterLink to="/sesiones" class="cat-card">
-        <div class="icono">📋</div>
         <h3>Sesiones</h3>
         <p>Revisa, filtra y exporta las sesiones grabadas.</p>
       </RouterLink>
 
       <RouterLink to="/vinculacion" class="cat-card">
-        <div class="icono">🔗</div>
         <h3>Vinculación</h3>
         <p>Asocia sensores a sesiones para registrar datos biométricos.</p>
       </RouterLink>
@@ -135,10 +132,6 @@ import { RouterLink } from 'vue-router'
   box-shadow: 0 6px 24px rgba(0,0,0,0.09);
   transform: translateY(-4px);
   border-color: #e94560;
-}
-.icono {
-  font-size: 2.2rem;
-  margin-bottom: 0.4rem;
 }
 .cat-card h3 {
   color: #1a1a2e;

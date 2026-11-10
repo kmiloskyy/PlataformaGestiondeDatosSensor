@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { SujetoEstudio } from './sujeto-estudio.entity.js';
-import { Vinculacion } from './vinculacion.entity.js';
+import { SujetoEstudio } from './sujeto-estudio.entity';
+import { Vinculacion } from './vinculacion.entity';
 
 @Entity('Sesion_Grabacion')
 export class SesionGrabacion {

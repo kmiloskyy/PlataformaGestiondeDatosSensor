@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Rol } from './rol.entity.js';
-import { SesionGrabacion } from './sesiongrabacion.entity.js';
+import { SesionGrabacion } from './sesiongrabacion.entity';
 
 @Entity('Sujeto_estudio')
 export class SujetoEstudio {

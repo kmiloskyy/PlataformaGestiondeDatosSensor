@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Vinculacion } from './vinculacion.entity.js';
+import { Vinculacion } from './vinculacion.entity';
 
 @Entity('Sensor')
 export class Sensor {

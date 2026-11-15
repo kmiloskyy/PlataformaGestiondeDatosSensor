@@ -28,7 +28,7 @@ body {
   color: #111;
 }
 
-/* Nuevo layout de pantalla dividida */
+/* Layout de pantalla dividida */
 .app-container {
   display: flex;
   min-height: 100vh;

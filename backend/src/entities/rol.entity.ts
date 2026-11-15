@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { SujetoEstudio } from './sujeto-estudio.entity.js';
+import { SujetoEstudio } from './sujeto-estudio.entity';
 
 @Entity('Rol')
 export class Rol {

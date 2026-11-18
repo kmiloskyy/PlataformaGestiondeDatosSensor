@@ -4,6 +4,7 @@ import Inicio from '../../views/inicio.vue'
 import Grabacion from '../../views/grabacion.vue'
 import Sesiones from '../../views/sesiones.vue'
 import Dispositivos from '../../views/dispositivos.vue'
+import Puente from '../../views/puente.vue'
 
 const routes = [
   {
@@ -25,6 +26,11 @@ const routes = [
     path: '/dispositivos',
     name: 'Dispositivos',
     component: Dispositivos
+  },
+  {
+    path: '/puente',
+    name: 'Puente',
+    component: Puente
   }
 ]
 

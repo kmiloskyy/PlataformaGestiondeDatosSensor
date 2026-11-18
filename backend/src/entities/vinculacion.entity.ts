@@ -14,10 +14,10 @@ export class Vinculacion {
   @Column()
   id_sesion: number;
 
-  @Column({ type: 'timestamp', nullable: true })
-  Fecha_desvinculacion: Date;
+  @Column({ type: 'timestamptz', nullable: true })
+  Fecha_desvinculacion: Date | null;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamptz' })
   fecha_vinculación: Date;
 
   @ManyToOne(() => Sensor, (sensor) => sensor.vinculaciones)

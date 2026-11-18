@@ -24,6 +24,9 @@ import { sensorState } from '../services/sensorBridge.js'
       <RouterLink to="/dispositivos" class="nav-link">
         <span class="icono"></span> Sensores
       </RouterLink>
+      <RouterLink to="/puente" class="nav-link">
+        <span class="icono"></span> Puente Polar
+      </RouterLink>
     </nav>
 
     <div class="sidebar-footer">

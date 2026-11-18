@@ -15,4 +15,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    // En desarrollo el navegador habla con Vite (5173) y Vite reenvía /api al backend Nest (3000): así no hace falta CORS.
+    proxy: { '/api': process.env.VITE_API_URL ?? 'http://localhost:3000' },
+  },
 })

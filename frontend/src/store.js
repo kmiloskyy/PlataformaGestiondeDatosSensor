@@ -1,29 +1,54 @@
-// Estado compartido y sondeo periódico del backend (el puente y la API cambian solos, la pantalla se mantiene al día).
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
 import { api } from './api.js'
 
 export const store = reactive({
-  estado: { midiendo: false, datos: [], puente: {} },
+  estado: null,
   ultimo: null,
-  sesiones: [],
-  sujetos: [],
-  sinConexion: false,
+  sesiones: null,
+  sujetos: null,
+  sensores: null,
+  errores: {},
 })
 
-async function intentar(fn) {
-  try { await fn(); store.sinConexion = false } catch { store.sinConexion = true }
+let versionEstado = 0
+export function aplicarEstado(estado) {
+  versionEstado++
+  store.estado = estado
+  delete store.errores.estado
 }
-export const refrescarEstado = () => intentar(async () => { store.estado = await api.estado() })
-export const refrescarUltimo = () => intentar(async () => { store.ultimo = await api.ultimo() })
-export const refrescarSesiones = () => intentar(async () => { store.sesiones = await api.sesiones() })
-export const refrescarSujetos = () => intentar(async () => { store.sujetos = await api.sujetos() })
 
-let timers = []
-export function iniciarSondeo() {
-  refrescarEstado(); refrescarUltimo(); refrescarSesiones(); refrescarSujetos()
-  timers = [
-    setInterval(() => { refrescarEstado(); refrescarUltimo() }, 1000),
-    setInterval(refrescarSesiones, 2000),
-  ]
+async function refrescar(recurso) {
+  const version = versionEstado
+  try {
+    const resultado = await api[recurso]()
+    if (recurso === 'estado' && version !== versionEstado) return
+    store[recurso] = resultado
+    delete store.errores[recurso]
+  } catch (error) {
+    if (recurso !== 'estado' || version === versionEstado) store.errores[recurso] = error.message
+  }
 }
-export function detenerSondeo() { timers.forEach(clearInterval); timers = [] }
+
+export function sondear(recurso, intervalo = 1000) {
+  let detenido = false
+  let siguiente
+  async function consultar() {
+    await refrescar(recurso)
+    if (!detenido) siguiente = setTimeout(consultar, intervalo)
+  }
+  consultar()
+  return () => {
+    detenido = true
+    clearTimeout(siguiente)
+  }
+}
+
+export const puente = computed(() => store.estado?.puente)
+export const puenteDisponible = computed(() => !store.errores.estado &&
+  puente.value?.visto_hace_s != null && puente.value.visto_hace_s <= 5)
+
+export const estadoPuente = computed(() => {
+  if (store.errores.estado) return 'API sin conexión'
+  if (!store.estado) return 'Consultando el puente…'
+  return puenteDisponible.value ? 'Puente en línea' : 'Puente sin conexión'
+})

@@ -1,6 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-import { sensorState } from '../services/sensorBridge.js'
+import { estadoPuente, puenteDisponible, store } from '../store.js'
 </script>
 
 <template>
@@ -16,7 +16,7 @@ import { sensorState } from '../services/sensorBridge.js'
       </RouterLink>
       <RouterLink to="/grabacion" class="nav-link">
         <span class="icono"></span> Grabación en Vivo
-        <span v-if="sensorState.grabando" class="rec-dot"></span>
+        <span v-if="store.estado?.midiendo && !store.errores.estado" class="rec-dot" aria-label="Grabación en curso"></span>
       </RouterLink>
       <RouterLink to="/sesiones" class="nav-link">
         <span class="icono"></span> Sesiones y Reportes
@@ -31,9 +31,9 @@ import { sensorState } from '../services/sensorBridge.js'
 
     <div class="sidebar-footer">
       <div class="estado-sistema">
-        <div class="indicador-puente">
-          <span class="punto-verde"></span>
-          <span>12 Sensores Listos</span>
+        <div class="indicador-puente" :class="{ disponible: puenteDisponible }">
+          <span class="punto-estado"></span>
+          <span>{{ estadoPuente }}</span>
         </div>
       </div>
       <p class="version">v1.2.0 · Polar BLE</p>
@@ -147,14 +147,16 @@ import { sensorState } from '../services/sensorBridge.js'
   align-items: center;
   gap: 0.5rem;
   font-size: 0.78rem;
-  color: #a7f3d0;
+  color: #cbd5e1;
   font-weight: 600;
 }
 
-.punto-verde {
+.disponible { color: #a7f3d0; }
+
+.punto-estado {
   width: 7px;
   height: 7px;
-  background: #10b981;
+  background: currentColor;
   border-radius: 50%;
 }
 
@@ -162,5 +164,14 @@ import { sensorState } from '../services/sensorBridge.js'
   color: #64748b;
   font-size: 0.72rem;
   margin: 0;
+}
+
+@media (max-width: 760px) {
+  .sidebar { position: static; width: 100%; height: auto; }
+  .sidebar-header, .sidebar-footer { padding: 0.8rem 1rem; }
+  .sidebar-nav { flex-direction: row; flex-wrap: wrap; padding: 0.5rem; }
+  .nav-link { padding: 0.55rem 0.7rem; }
+  .nav-link .icono { display: none; }
+  .rec-dot { position: static; }
 }
 </style>

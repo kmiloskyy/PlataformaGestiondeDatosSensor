@@ -6,9 +6,21 @@ import { SujetoEstudio } from '../entities/sujeto-estudio.entity.js';
 import { validarInicio } from '../datos/validacion.js';
 import type { ClaveDato } from '../datos/catalogo.js';
 
-export interface SesionActiva { id_sesion: number; id_sujeto: number; sujeto: string; datos: ClaveDato[] }
+export interface SesionActiva {
+  id_sesion: number;
+  id_sujeto: number;
+  sujeto: string;
+  datos: ClaveDato[];
+  fecha_inicio: Date;
+}
 
-interface EstadoPuente { visto: number; activos: string[]; errores: Record<string, string>; dispositivo: string | null }
+interface EstadoPuente {
+  visto: number;
+  activos: string[];
+  errores: Record<string, string>;
+  dispositivo: string | null;
+  direccion_mac: string | null;
+}
 
 /**
  * Control de la medición: qué sesión está en curso y qué datos se pidieron.
@@ -20,7 +32,7 @@ interface EstadoPuente { visto: number; activos: string[]; errores: Record<strin
 export class MedicionService implements OnModuleInit {
   private readonly log = new Logger(MedicionService.name);
   private activa: SesionActiva | null = null;
-  private puente: EstadoPuente = { visto: 0, activos: [], errores: {}, dispositivo: null };
+  private puente: EstadoPuente = { visto: 0, activos: [], errores: {}, dispositivo: null, direccion_mac: null };
 
   constructor(
     @InjectRepository(SesionGrabacion) private readonly sesiones: Repository<SesionGrabacion>,
@@ -50,9 +62,11 @@ export class MedicionService implements OnModuleInit {
       id_sujeto: this.activa?.id_sujeto ?? null,
       sujeto: this.activa?.sujeto ?? null,
       datos: this.activa?.datos ?? [],
+      fecha_inicio: this.activa?.fecha_inicio ?? null,
       puente: {
         visto_hace_s: this.puente.visto ? +((Date.now() - this.puente.visto) / 1000).toFixed(1) : null,
-        activos: this.puente.activos, errores: this.puente.errores, dispositivo: this.puente.dispositivo,
+        activos: this.puente.activos, errores: this.puente.errores,
+        dispositivo: this.puente.dispositivo, direccion_mac: this.puente.direccion_mac,
       },
     };
   }
@@ -71,31 +85,44 @@ export class MedicionService implements OnModuleInit {
       fecha_fin: null,
       datos_seleccionados: valor.datos,
     }));
-    this.activa = { id_sesion: sesion.id_sesion, id_sujeto: sujeto.id_sujeto, sujeto: sujeto.Nombre, datos: valor.datos };
+    this.activa = { id_sesion: sesion.id_sesion, id_sujeto: sujeto.id_sujeto, sujeto: sujeto.Nombre, datos: valor.datos, fecha_inicio: sesion.fecha_inicio };
     this.puente.activos = []; this.puente.errores = {};
     this.log.log(`Sesión ${sesion.id_sesion} iniciada (${sujeto.Nombre}): ${valor.datos.join(', ')}`);
     return this.estado();
   }
 
   async detener() {
-    if (this.activa) {
-      const ahora = new Date();
-      await this.sesiones.update({ id_sesion: this.activa.id_sesion }, { estado_sesion: 'finalizada', fecha_fin: ahora });
-      await this.ds.query(`UPDATE "Vinculacion" SET "Fecha_desvinculacion" = $1 WHERE id_sesion = $2 AND "Fecha_desvinculacion" IS NULL`, [ahora, this.activa.id_sesion]);
-      await this.ds.query(`UPDATE "Sensor" SET "Estado" = 'desconectado' WHERE id_sensor IN (SELECT id_sensor FROM "Vinculacion" WHERE id_sesion = $1)`, [this.activa.id_sesion]);
-      this.log.log(`Sesión ${this.activa.id_sesion} finalizada`);
-      this.activa = null;
+    const activa = this.activa;
+    if (activa) {
+      const id = activa.id_sesion;
+      await this.ds.transaction(async (em) => {
+        const sesion = await em.findOne(SesionGrabacion, {
+          where: { id_sesion: id }, lock: { mode: 'pessimistic_write' },
+        });
+        if (sesion?.estado_sesion !== 'en_curso') return;
+        const ahora = new Date();
+        await em.update(SesionGrabacion, { id_sesion: id }, { estado_sesion: 'finalizada', fecha_fin: ahora });
+        await em.query(`UPDATE "Vinculacion" SET "Fecha_desvinculacion" = $1 WHERE id_sesion = $2 AND "Fecha_desvinculacion" IS NULL`, [ahora, id]);
+        await em.query(`UPDATE "Sensor" SET "Estado" = 'desconectado' WHERE id_sensor IN (SELECT id_sensor FROM "Vinculacion" WHERE id_sesion = $1)`, [id]);
+      });
+      if (this.activa === activa) {
+        this.activa = null;
+        this.puente.activos = [];
+        this.puente.errores = {};
+        this.log.log(`Sesión ${id} finalizada`);
+      }
     }
     return this.estado();
   }
 
   /** El puente informa qué flujos del sensor pudo activar y cuáles no (y por qué). */
-  registrarPuente(b: { activos?: unknown; errores?: unknown; dispositivo?: unknown }) {
+  registrarPuente(b: { activos?: unknown; errores?: unknown; dispositivo?: unknown; direccion_mac?: unknown }) {
     this.puente = {
       visto: Date.now(),
       activos: Array.isArray(b.activos) ? b.activos.map(String) : [],
       errores: b.errores && typeof b.errores === 'object' ? Object.fromEntries(Object.entries(b.errores).map(([k, v]) => [k, String(v)])) : {},
       dispositivo: typeof b.dispositivo === 'string' ? b.dispositivo : this.puente.dispositivo,
+      direccion_mac: typeof b.direccion_mac === 'string' ? b.direccion_mac.trim() || null : null,
     };
     return { ok: true };
   }

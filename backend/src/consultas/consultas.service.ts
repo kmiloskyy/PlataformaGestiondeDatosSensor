@@ -33,8 +33,26 @@ export class ConsultasService {
     return this.sujetos.find({ select: { id_sujeto: true, Nombre: true }, order: { id_sujeto: 'ASC' } });
   }
 
+  /** Inventario de sensores registrados por ingesta, con su vinculación más reciente. */
+  listarSensores() {
+    return this.ds.query(`
+      SELECT sensor.id_sensor, sensor."Nombre_dispositivo" AS nombre, sensor."direccion_MAC" AS direccion_mac,
+        sensor.tipo, vinculacion.id_sesion, vinculacion.sujeto, vinculacion.fecha_vinculacion, vinculacion.fecha_desvinculacion
+      FROM "Sensor" sensor
+      LEFT JOIN LATERAL (
+        SELECT v.id_sesion, sujeto."Nombre" AS sujeto, v."fecha_vinculación" AS fecha_vinculacion,
+          v."Fecha_desvinculacion" AS fecha_desvinculacion
+        FROM "Vinculacion" v
+        JOIN "Sesion_Grabacion" sesion ON sesion.id_sesion = v.id_sesion
+        LEFT JOIN "Sujeto_estudio" sujeto ON sujeto.id_sujeto = sesion.id_sujeto
+        WHERE v.id_sensor = sensor.id_sensor
+        ORDER BY v.id_vinculacion DESC LIMIT 1
+      ) vinculacion ON true
+      ORDER BY sensor.id_sensor`);
+  }
+
   async listarSesiones() {
-    const filas = await this.sesiones.find({ relations: { sujeto: true }, order: { id_sesion: 'DESC' } });
+    const filas = await this.sesiones.find({ relations: { sujeto: true, vinculaciones: { sensor: true } }, order: { id_sesion: 'DESC' } });
     const cuentas: { id_sesion: number; tipo_dato: string; n: number }[] = await this.ds.query(`
       SELECT v.id_sesion, m.tipo_dato, COUNT(*)::int AS n FROM "Muestreo_datos" m
       JOIN "Vinculacion" v ON v.id_vinculacion = m.id_vinculacion GROUP BY v.id_sesion, m.tipo_dato`);
@@ -42,6 +60,7 @@ export class ConsultasService {
       id_sesion: s.id_sesion, id_sujeto: s.id_sujeto, sujeto: s.sujeto?.Nombre ?? null, nombre_sesion: s.Nombre_sesion,
       estado_sesion: s.estado_sesion, fecha_inicio: s.fecha_inicio, fecha_fin: s.fecha_fin,
       datos: this.datosDe(s),
+      sensores: (s.vinculaciones ?? []).flatMap(({ sensor }) => sensor ? [sensor.Nombre_dispositivo] : []),
       muestras: Object.fromEntries(cuentas.filter((c) => c.id_sesion === s.id_sesion).map((c) => [c.tipo_dato, c.n])),
     }));
   }
@@ -119,14 +138,14 @@ export class ConsultasService {
     return { nombre: `sesion-${id}-${dato}.csv`, texto };
   }
 
-  /** Lo último que llegó (alimenta el número grande de lpm y el panel "Así llegan los datos"). */
+  /** Lo último que llegó (alimenta el panel de lecturas en vivo). */
   async ultimo() {
     const activa = this.medicion.getActiva();
     const filtro = activa ? 'AND v.id_sesion = $1' : '';
     const params = activa ? [activa.id_sesion] : [];
     const base = `FROM "Muestreo_datos" m JOIN "Vinculacion" v ON v.id_vinculacion = m.id_vinculacion WHERE true ${filtro}`;
     const [ult] = await this.ds.query(`SELECT m.timestamp ${base} ORDER BY m.timestamp DESC LIMIT 1`, params);
-    if (!ult) return { paquete: null };
+    if (!ult) return { id_sesion: activa?.id_sesion ?? null, paquete: null };
     const reciente: MuestreoDatos[] = await this.muestras.createQueryBuilder('m').innerJoin('m.vinculacion', 'v')
       .where(activa ? 'v.id_sesion = :s' : 'true', { s: activa?.id_sesion })
       .andWhere("m.timestamp > :t::timestamptz - interval '1 second'", { t: ult.timestamp })
@@ -135,6 +154,7 @@ export class ConsultasService {
     const lecturas = armarLecturas(reciente, activa ? activa.datos : [...CLAVES]);
     const edad = (t: Date) => +((Date.now() - new Date(t).getTime()) / 1000).toFixed(1);
     return {
+      id_sesion: activa?.id_sesion ?? null,
       edad_s: edad(ult.timestamp),
       frecuencia_cardiaca: fc?.frecuencia_cardiaca ?? null, fc_edad_s: fc ? edad(fc.timestamp) : null, fc_crudo: fc?.fc_crudo ?? null,
       paquete: lecturas[lecturas.length - 1] ?? null,

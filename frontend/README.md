@@ -25,11 +25,21 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Desarrollo local
+
+Instala también las dependencias del backend desde `frontend/`:
+
+```sh
+npm --prefix ../backend install
+```
+
+Con PostgreSQL en marcha, inicia Vite y NestJS en una sola terminal:
 
 ```sh
 npm run dev
 ```
+
+Vite muestra la URL de la web en la terminal. Presiona Ctrl+C para detener ambos procesos. Si ya tienes una API en ejecución, usa `npm run dev:frontend`.
 
 ### Compile and Minify for Production
 

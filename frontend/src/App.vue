@@ -1,6 +1,12 @@
 <script setup>
+import { onBeforeUnmount, onMounted } from 'vue'
 import Navbar from './components/navbar.vue'
 import { RouterView } from 'vue-router'
+import { sondear } from './store.js'
+
+let detener
+onMounted(() => { detener = sondear('estado') })
+onBeforeUnmount(() => detener?.())
 </script>
 
 <template>
@@ -39,5 +45,10 @@ body {
   /* Deja un margen izquierdo igual al ancho del menú lateral (250px) */
   margin-left: 250px; 
   width: calc(100% - 250px);
+}
+
+@media (max-width: 760px) {
+  .app-container { display: block; }
+  .main-content { margin-left: 0; width: 100%; }
 }
 </style>

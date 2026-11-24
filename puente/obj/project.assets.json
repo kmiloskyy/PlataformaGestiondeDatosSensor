@@ -8,23 +8,23 @@
     "net10.0-windows10.0.19041.0": []
   },
   "packageFolders": {
-    "C:\\Users\\jmval\\.nuget\\packages\\": {},
+    "C:\\Users\\aspet\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\jmval\\Downloads\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj",
+      "projectUniqueName": "C:\\Users\\aspet\\OneDrive\\Documentos\\GitHub\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj",
       "projectName": "puente-polar",
-      "projectPath": "C:\\Users\\jmval\\Downloads\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj",
-      "packagesPath": "C:\\Users\\jmval\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\jmval\\Downloads\\PlataformaGestiondeDatosSensor\\puente\\obj\\",
+      "projectPath": "C:\\Users\\aspet\\OneDrive\\Documentos\\GitHub\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj",
+      "packagesPath": "C:\\Users\\aspet\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\aspet\\OneDrive\\Documentos\\GitHub\\PlataformaGestiondeDatosSensor\\puente\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\jmval\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\aspet\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -33,7 +33,6 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {

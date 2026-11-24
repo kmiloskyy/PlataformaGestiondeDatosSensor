@@ -1,36 +1,49 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { explicarFc } from '../catalogo.js'
-import { store } from '../store.js'
+import { sondear, store } from '../store.js'
 
-const u = computed(() => store.ultimo)
-const fresco = computed(() => u.value?.fc_edad_s != null && u.value.fc_edad_s < 5)
-const bpm = computed(() => (fresco.value ? u.value.frecuencia_cardiaca : '--'))
+const idSesion = computed(() => !store.errores.estado && store.estado?.midiendo ? store.estado.id_sesion : null)
+watch(idSesion, (id, _, alLimpiar) => {
+  if (id != null) alLimpiar(sondear('ultimo'))
+}, { immediate: true })
 
-// Se muestran solo las primeras muestras de cada arreglo para que el JSON sea legible.
+const lectura = computed(() => {
+  if (idSesion.value == null || store.errores.ultimo) return null
+  return store.ultimo?.id_sesion === idSesion.value ? store.ultimo : null
+})
+const bpm = computed(() => lectura.value?.fc_edad_s != null && lectura.value.fc_edad_s < 5
+  ? lectura.value.frecuencia_cardiaca : '—')
+
 const json = computed(() => {
-  const p = u.value?.paquete
-  if (!p) return '(esperando datos…)'
-  const m = {}
-  for (const [k, v] of Object.entries(p)) {
-    m[k] = Array.isArray(v) && v.length && typeof v[0] === 'object' ? [...v.slice(0, 2), `… (${v.length} muestras en este segundo)`] : v
-  }
-  return JSON.stringify(m, null, 1)
+  const paquete = lectura.value?.paquete
+  if (!paquete) return ''
+  const vista = Object.fromEntries(Object.entries(paquete).map(([clave, valor]) => [
+    clave,
+    Array.isArray(valor) && valor.length > 2 && typeof valor[0] === 'object'
+      ? [...valor.slice(0, 2), `… (${valor.length} muestras)`] : valor,
+  ]))
+  return JSON.stringify(vista, null, 2)
 })
 </script>
 
 <template>
-  <div class="card">
-    <h2>2. Así llegan los datos</h2>
-    <div class="bpm"><span>{{ bpm }}</span> <small>lpm</small></div>
-    <div class="estado">
-      <template v-if="!u?.paquete">Aún no ha llegado ningún dato.</template>
-      <span v-else-if="u.edad_s < 5" class="ok">● Llegando datos</span>
-      <span v-else class="warn">Último dato hace {{ Math.round(u.edad_s) }} s</span>
-    </div>
-    <div class="estado">Último paquete de frecuencia cardíaca (bytes crudos) y lo que significa:</div>
-    <pre>{{ u?.fc_crudo ? explicarFc(u.fc_crudo) : '(esperando datos…)' }}</pre>
-    <div class="estado">Último segundo guardado (cada muestra cruda; aquí solo las primeras):</div>
-    <pre>{{ json }}</pre>
-  </div>
+  <section class="card">
+    <h2>Últimas lecturas</h2>
+    <div class="bpm">{{ bpm }} <small>lpm</small></div>
+    <p v-if="store.errores.estado || (idSesion != null && store.errores.ultimo)" class="estado err" role="alert">No se pudieron consultar las lecturas.</p>
+    <p v-else-if="idSesion == null" class="estado">Inicia una grabación para ver las lecturas.</p>
+    <p v-else-if="!lectura?.paquete" class="estado">Esperando el primer paquete del sensor.</p>
+    <p v-else-if="lectura.edad_s < 5" class="estado ok">Recibiendo datos</p>
+    <p v-else class="estado warn">Última lectura hace {{ Math.round(lectura.edad_s) }} s</p>
+
+    <template v-if="lectura?.fc_crudo">
+      <h3>Bytes de frecuencia cardíaca</h3>
+      <pre>{{ explicarFc(lectura.fc_crudo) }}</pre>
+    </template>
+    <template v-if="json">
+      <h3>Muestras recientes</h3>
+      <pre>{{ json }}</pre>
+    </template>
+  </section>
 </template>

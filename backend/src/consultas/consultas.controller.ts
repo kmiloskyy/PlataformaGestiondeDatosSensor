@@ -9,6 +9,9 @@ export class ConsultasController {
   @Get('sujetos')
   sujetos() { return this.consultas.listarSujetos(); }
 
+  @Get('sensores')
+  sensores() { return this.consultas.listarSensores(); }
+
   @Get('sesiones')
   sesiones() { return this.consultas.listarSesiones(); }
 

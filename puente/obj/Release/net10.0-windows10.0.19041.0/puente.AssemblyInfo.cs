@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("puente-polar")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+765c0f44615b53ab0882497a125ed83cf7a969f7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dbc83d10ddee7c656f2aa6fada54be10765ab124")]
 [assembly: System.Reflection.AssemblyProductAttribute("puente-polar")]
 [assembly: System.Reflection.AssemblyTitleAttribute("puente-polar")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

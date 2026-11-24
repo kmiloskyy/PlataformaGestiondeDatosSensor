@@ -19,7 +19,7 @@ export class MedicionController {
   }
 
   @Post('puente')
-  puente(@Body() body: { activos?: unknown; errores?: unknown; dispositivo?: unknown }) {
+  puente(@Body() body: Parameters<MedicionService['registrarPuente']>[0]) {
     return this.medicion.registrarPuente(body ?? {});
   }
 }

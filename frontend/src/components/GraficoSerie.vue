@@ -28,7 +28,7 @@ function pintar() {
 }
 
 onMounted(() => {
-  const texto = '#94a3b8'
+  const texto = '#475569'
   grafico = new Chart(canvas.value, {
     type: 'line',
     data: {
@@ -41,13 +41,13 @@ onMounted(() => {
       animation: false, maintainAspectRatio: false, parsing: false, normalized: true,
       interaction: { mode: 'nearest', axis: 'x', intersect: false },
       plugins: {
-        title: { display: true, text: conf.titulo, color: '#e2e8f0' },
-        legend: { labels: { color: '#e2e8f0', boxWidth: 12 } },
+        title: { display: true, text: conf.titulo, color: '#1e293b' },
+        legend: { labels: { color: '#1e293b', boxWidth: 12 } },
         tooltip: { callbacks: { title: (it) => new Date(it[0].parsed.x).toLocaleTimeString() } },
       },
       scales: {
-        x: { type: 'linear', ticks: { color: texto, maxTicksLimit: 8, callback: (v) => new Date(v).toLocaleTimeString() }, grid: { color: '#334155' } },
-        y: { ticks: { color: texto }, grid: { color: '#334155' } },
+        x: { type: 'linear', ticks: { color: texto, maxTicksLimit: 8, callback: (v) => new Date(v).toLocaleTimeString() }, grid: { color: '#e2e8f0' } },
+        y: { ticks: { color: texto }, grid: { color: '#e2e8f0' } },
       },
     },
   })
@@ -58,5 +58,5 @@ onBeforeUnmount(() => grafico?.destroy())
 </script>
 
 <template>
-  <div class="grafico"><canvas ref="canvas"></canvas></div>
+  <div class="grafico"><canvas ref="canvas" role="img" :aria-label="conf.titulo"></canvas></div>
 </template>

@@ -14,7 +14,7 @@ using Windows.Devices.Enumeration;
 using Windows.Storage.Streams;
 
 string baseUrl = args.FirstOrDefault(a => a.StartsWith("http")) ?? "http://localhost:3000";
-string filtro = args.Where(a => !a.StartsWith("http")).Skip(1).FirstOrDefault() ?? "Polar";
+string filtro = args.FirstOrDefault(a => !a.StartsWith("http")) ?? "Polar";
 const string PMD = "fb005c80-02e7-f387-1cad-8acd2d8df0c8";
 
 // clave de la pagina -> (tipo PMD, nombre del arreglo en el JSON)
@@ -236,25 +236,26 @@ if (st0 != GattCommunicationStatus.Success) { Console.WriteLine($"No se pudo act
 using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
 Console.WriteLine($"Conectado a {info.Name}. Esperando que inicies una sesion desde {baseUrl} ... (Ctrl+C para salir)");
 
-async Task Informar(Dictionary<string, string> errores) {
+var erroresFlujos = new Dictionary<string, string>();
+async Task Informar() {
   var lista = activos.ToList(); if (seleccion.Contains("fc")) lista.Insert(0, "fc");
-  try { await http.PostAsync(baseUrl + "/api/puente", new StringContent(JsonSerializer.Serialize(new { activos = lista, errores, dispositivo = info.Name }), Encoding.UTF8, "application/json")); } catch { }
+  try { await http.PostAsync(baseUrl + "/api/puente", new StringContent(JsonSerializer.Serialize(new { activos = lista, errores = erroresFlujos, dispositivo = info.Name, direccion_mac = mac }), Encoding.UTF8, "application/json")); } catch { }
 }
 
 async Task Reconciliar(bool quiere, string sid, string[] sensores) {
   lock (lk) { midiendo = false; foreach (var l in pend.Values) l.Clear(); hrPend.Clear(); }
   foreach (var c in activos.ToList()) { try { await Cmd(new byte[] { 0x03, (byte)PMDS[c].tipo }); } catch { } }
   activos.Clear(); offsetMs = null; prevNs.Clear(); avisados.Clear();
-  var errores = new Dictionary<string, string>();
+  erroresFlujos.Clear();
   if (quiere) {
     Console.WriteLine($"== SESION {sid} INICIADA: {string.Join(", ", sensores)} ==");
     lock (lk) { sesionId = sid; seleccion = sensores; midiendo = true; }
     foreach (var c in sensores.Where(PMDS.ContainsKey)) {
-      if (ctrl == null) { errores[c] = "el servicio PMD del sensor no esta disponible"; continue; }
-      try { await IniciarFlujo(c); } catch (Exception e) { errores[c] = e.Message; Console.WriteLine($"  {c}: NO se pudo activar -> {e.Message}"); }
+      if (ctrl == null) { erroresFlujos[c] = "el servicio PMD del sensor no esta disponible"; continue; }
+      try { await IniciarFlujo(c); } catch (Exception e) { erroresFlujos[c] = e.Message; Console.WriteLine($"  {c}: NO se pudo activar -> {e.Message}"); }
     }
   } else { Console.WriteLine("== MEDICION DETENIDA =="); lock (lk) { seleccion = Array.Empty<string>(); sesionId = null; } }
-  await Informar(errores);
+  await Informar();
 }
 
 // ------------------------------------------------------------------ envio: un paquete por segundo con todo lo recibido, sin promediar
@@ -306,6 +307,10 @@ while (true) {
     if (sid != ultimoSesion || primera) {
       primera = false; ultimoSesion = sid;
       await Reconciliar(quiere, sid, quiere ? j.GetProperty("datos").EnumerateArray().Select(x => x.GetString()).ToArray() : Array.Empty<string>());
+    } else if (j.TryGetProperty("puente", out var estadoPuente) &&
+        estadoPuente.TryGetProperty("dispositivo", out var reportado) && reportado.ValueKind == JsonValueKind.Null) {
+      // Recupera la identificación si el servidor reinicia o falla el primer aviso.
+      await Informar();
     }
   } catch (Exception e) { Console.WriteLine($"(sin conexion con el servidor: {e.Message})"); }
   await Task.Delay(1000);

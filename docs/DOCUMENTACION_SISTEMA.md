@@ -167,10 +167,11 @@ Todos cuelgan de `/api`.
 | `POST /medicion` `{id_sujeto, datos:[…]}` | Web | **Inicia** una sesión eligiendo qué datos medir |
 | `POST /medicion` `{midiendo:false}` | Web | **Detiene** la sesión |
 | `GET /medicion` | Web y puente | Estado: ¿hay sesión?, ¿qué datos?, ¿el puente está vivo? |
-| `POST /puente` | Puente | Informa qué datos pudo activar |
+| `POST /puente` | Puente | Informa el dispositivo, su MAC y las señales que pudo activar |
 | `POST /telemetria` | Puente | **Entrega un paquete crudo** (201 guardado · 202 ignorado · 400 inválido) |
 | `GET /sujetos` | Web | Lista sujetos (solo id y nombre; nunca RUT, peso ni contraseña) |
-| `GET /sesiones` | Web | Lista sesiones con cuántas filas hay de cada dato |
+| `GET /sensores` | Web | Lista sensores registrados con su vinculación más reciente |
+| `GET /sesiones` | Web | Lista sesiones con el sensor vinculado y el conteo de muestras de cada señal |
 | `GET /sesiones/:id` | Usuario | **JSON completo** de la sesión (`?descargar=1` lo baja como archivo) |
 | `GET /sesiones/:id/series` | Web | Datos de una ventana de tiempo para graficar |
 | `GET /sesiones/:id/csv/:dato` | Usuario | CSV de un dato (`fc`, `rr`, `acc`, `gyro`, `mag`, `ppg`, `ppi`) |
@@ -294,14 +295,16 @@ Ejemplo (una sesión de 1 segundo con acelerómetro y FC):
 | `src/store.js` | Estado compartido (`reactive`) y sondeo periódico del backend |
 | `components/PanelSesion.vue` | Elegir sujeto y datos, **iniciar/detener**, estado del puente |
 | `components/UltimoPaquete.vue` | Número grande de lpm, bytes crudos de FC explicados, último segundo guardado |
-| `components/GraficoSesion.vue` | Elegir sesión, ancho de ventana, **deslizador pasado↔presente**, "seguir en vivo" |
+| `components/GraficoSesion.vue` | Ancho de ventana, actualización en vivo y deslizador para revisar el historial |
 | `components/GraficoSerie.vue` | Un gráfico (Chart.js) de un dato |
 | `components/TablaSesiones.vue` | Sesiones con enlaces a gráfico, JSON y CSV por dato |
 
+**Grabación en vivo** inicia y detiene sesiones. **Sensores** muestra el dispositivo informado por Puente y la última vinculación de cada sensor. **Sesiones y reportes** consulta y exporta las grabaciones guardadas. **Puente Polar** muestra el diagnóstico de conexión.
+
 **Decisiones:**
-* **D-12 — Sondeo (*polling*) en vez de WebSockets:** la pantalla consulta cada 1–2 s. Es más simple, suficiente para datos de 1 paquete/s y fácil de depurar. Los WebSockets serían la mejora natural si se necesitara menor latencia.
+* **D-12 — Sondeo (*polling*) en vez de WebSockets:** la pantalla consulta el estado y las lecturas en vivo aproximadamente cada segundo.
 * **En desarrollo, Vite reenvía `/api` al backend** (`vite.config.js`), así no hace falta configurar CORS.
-* **Gráfico de la sesión completa:** el deslizador mueve una *ventana* (10 s, 30 s, 1 min, 5 min o toda la sesión) a lo largo de la sesión; en cada movimiento se piden al servidor solo los puntos de esa ventana. "Seguir en vivo" mantiene la ventana pegada al presente. Hay **un gráfico por dato**, todos con la misma ventana de tiempo.
+* **Gráfico de la sesión:** en el historial, el deslizador permite elegir qué tramo consultar. Durante la grabación, los gráficos muestran el tramo más reciente. Cada señal con muestras en el tramo tiene su propio gráfico.
 
 ---
 
@@ -336,22 +339,20 @@ Ejemplo (una sesión de 1 segundo con acelerómetro y FC):
    docker compose up -d          # PostgreSQL 16 en el puerto 5432
    ```
    Si el puerto 5432 está ocupado por otro proyecto, levantar PostgreSQL en otro puerto y poner ese puerto en `backend/.env` (`DB_PORT`). Las variables están en `backend/.env.example`.
-2. **Backend**
+2. **Frontend y backend**. Desde la raíz del repositorio:
    ```
-   cd backend && npm install && npm run start:dev      # http://localhost:3000/api
+   npm --prefix backend install
+   npm --prefix frontend install
+   npm --prefix frontend run dev
    ```
-   Al arrancar crea las tablas y un sujeto de demostración.
-3. **Frontend**
-   ```
-   cd frontend && npm install && npm run dev            # http://localhost:5173 (o el siguiente puerto libre)
-   ```
-4. **Puente** (Windows)
+   Vite muestra la URL de la web. NestJS sirve por defecto en `http://localhost:3000/api` y crea las tablas y un sujeto de demostración. Ctrl+C detiene ambos procesos.
+3. **Puente** (Windows)
    ```
    cd puente && dotnet build -c Release -o bin
    .\bin\puente-polar.exe                                # opcional: puente-polar.exe http://localhost:3000 Polar
    ```
    Si acaba de usarse el sensor con otra aplicación, Windows tarda unos segundos en soltarlo; el puente reintenta solo.
-5. **Usar:** en la web elegir sujeto y datos → **Iniciar sesión** → ver gráficos → **Detener** → descargar JSON/CSV.
+4. **Usar:** en la web elegir sujeto y datos → **Iniciar sesión** → ver gráficos → **Detener** → descargar JSON/CSV.
 
 **Pruebas automáticas:** `cd backend && npm test` (11 pruebas de validación, mapeo y exportación).
 

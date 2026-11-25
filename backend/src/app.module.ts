@@ -4,6 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Rol } from './entities/rol.entity';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
+import { MedicionModule } from './medicion/medicion.module.js';
+import { IngestaModule } from './ingesta/ingesta.module.js';
+import { ConsultasModule } from './consultas/consultas.module.js';
+import { SeedModule } from './seed/seed.module.js';
+import { AuthModule } from './auth/auth.module.js';
 
 @Module({
   imports: [
@@ -23,6 +28,11 @@ import { AppController } from './app.controller';
         synchronize: true,
       }),
     }),
+    MedicionModule,
+    IngestaModule,
+    ConsultasModule,
+    SeedModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

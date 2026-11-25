@@ -13,14 +13,25 @@ export class SesionGrabacion {
   @Column()
   Nombre_sesion: string;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'varchar', length: 17, nullable: true })
+  direccion_mac: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  ubicacion: string | null;
+
+  @Column({ type: 'timestamptz' })
   fecha_inicio: Date;
 
+  /** 'en_curso' | 'finalizada' */
   @Column()
   estado_sesion: string;
 
-  @Column({ type: 'timestamp', nullable: true })
-  fecha_fin: Date;
+  @Column({ type: 'timestamptz', nullable: true })
+  fecha_fin: Date | null;
+
+  /** Qué datos se eligieron medir al iniciar la sesión: ['fc','acc','gyro','mag','ppg','ppi'] */
+  @Column({ type: 'jsonb', nullable: true })
+  datos_seleccionados: string[] | null;
 
   @ManyToOne(() => SujetoEstudio, (sujeto) => sujeto.sesiones)
   @JoinColumn({ name: 'id_sujeto' })

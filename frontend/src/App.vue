@@ -1,45 +1,62 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import api from './api/axios';
+<script setup>
+import { onBeforeUnmount, watch } from 'vue'
+import Navbar from './components/navbar.vue'
+import { RouterView, useRoute } from 'vue-router'
+import { sondear } from './store.js'
+import { esProfesor } from './auth.js'
 
-// Definir la interfaz de los datos esperados
-interface Rol {
-  id_Rol: number;
-  Profesor: string;
-  Alumno: string;
-}
+const route = useRoute()
 
-const roles = ref<Rol[]>([]);
-const cargando = ref<boolean>(true);
-const error = ref<string | null>(null);
-
-const obtenerRoles = async () => {
-  try {
-    const respuesta = await api.get<Rol[]>('/test-db');
-    roles.value = respuesta.data;
-  } catch (err: any) {
-    error.value = 'Error al conectar con el servidor: ' + err.message;
-  } finally {
-    cargando.value = false;
-  }
-};
-
-onMounted(() => {
-  obtenerRoles();
-});
+// El estado de grabación solo lo puede consultar el profesor; se sondea mientras haya un profesor con sesión iniciada.
+let detener
+watch(esProfesor, (activo) => {
+  detener?.()
+  detener = activo ? sondear('estado') : undefined
+}, { immediate: true })
+onBeforeUnmount(() => detener?.())
 </script>
 
 <template>
-  <div style="padding: 20px;">
-    <h1>Integración Vue 3 + NestJS</h1>
-
-    <p v-if="cargando">Cargando datos de PostgreSQL...</p>
-    <p v-else-if="error" style="color: red;">{{ error }}</p>
-
-    <ul v-else>
-      <li v-for="rol in roles" :key="rol.id_Rol">
-        ID: {{ rol.id_Rol }} | Profesor: {{ rol.Profesor }} | Alumno: {{ rol.Alumno }}
-      </li>
-    </ul>
+  <RouterView v-if="route.name === 'Login'" />
+  <div v-else class="app-container">
+    <!-- El Navbar ahora actuará como menú lateral -->
+    <Navbar />
+    
+    <!-- El contenido principal de las vistas va a la derecha -->
+    <main class="main-content">
+      <RouterView />
+    </main>
   </div>
 </template>
+
+<style>
+/* Estilos globales básicos */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #f4f6fb;
+  color: #111;
+}
+
+/* Layout de pantalla dividida */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  /* Deja un margen izquierdo igual al ancho del menú lateral (250px) */
+  margin-left: 250px; 
+  width: calc(100% - 250px);
+}
+
+@media (max-width: 760px) {
+  .app-container { display: block; }
+  .main-content { margin-left: 0; width: 100%; }
+}
+</style>

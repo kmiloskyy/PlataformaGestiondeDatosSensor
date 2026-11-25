@@ -28,6 +28,11 @@ export class SujetoEstudio {
   @Column('float')
   estatura_cm: number;
 
+  /** Correo con el que se inicia sesión (opcional: los sujetos sin cuenta no lo tienen). */
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  correo: string | null;
+
+  /** Hash scrypt con formato "salt:hash" (hex). Nunca se guarda ni se devuelve en texto plano. */
   @Column()
   Password: string;
 

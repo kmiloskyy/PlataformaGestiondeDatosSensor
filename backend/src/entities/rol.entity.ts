@@ -12,6 +12,10 @@ export class Rol {
   @Column()
   Alumno: string;
 
+  /** Lo que realmente decide los permisos. Cualquier valor distinto de 'profesor' se trata como alumno. */
+  @Column({ type: 'varchar', default: 'alumno' })
+  tipo: string;
+
   @OneToMany(() => SujetoEstudio, (sujeto) => sujeto.rol)
   sujetos: SujetoEstudio[];
 }

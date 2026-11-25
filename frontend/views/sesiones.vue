@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import GraficoSesion from '../src/components/GraficoSesion.vue'
 import TablaSesiones from '../src/components/TablaSesiones.vue'
 import { sondear, store } from '../src/store.js'
+import { esProfesor } from '../src/auth.js'
 
 const busqueda = ref('')
 const seleccion = ref(null)
@@ -31,15 +32,16 @@ function imprimir() { window.print() }
 <template>
   <div class="medicion-view sesiones-view">
     <header class="pagina-encabezado">
-      <h1>Sesiones y reportes</h1>
-      <p>Revisa las grabaciones guardadas, grafica un tramo y descarga las muestras en CSV o JSON.</p>
+      <h1>{{ esProfesor ? 'Sesiones y reportes' : 'Mis sesiones' }}</h1>
+      <p v-if="!esProfesor">Aquí ves solo tus propias grabaciones.</p>
+      <p v-else>Revisa las grabaciones guardadas, grafica un tramo y descarga las muestras en CSV o JSON.</p>
     </header>
     <div class="medicion-grid">
       <section class="card full historial">
         <div class="controles">
           <label for="buscar-sesion">Buscar sesión</label>
           <input id="buscar-sesion" v-model="busqueda" type="search" placeholder="Nombre, sujeto, ubicación o MAC" />
-          <RouterLink to="/grabacion">Nueva grabación</RouterLink>
+          <RouterLink v-if="esProfesor" to="/grabacion">Nueva grabación</RouterLink>
         </div>
         <p v-if="store.errores.sesiones" class="estado err" role="alert">No se pudieron consultar las sesiones.</p>
         <p v-else-if="!store.sesiones" class="estado">Cargando sesiones…</p>

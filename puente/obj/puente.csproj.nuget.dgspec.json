@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\aspet\\OneDrive\\Documentos\\GitHub\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj": {}
+    "C:\\Users\\Kmilo\\OneDrive\\Documentos\\SENSORPOLAR\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj": {}
   },
   "projects": {
-    "C:\\Users\\aspet\\OneDrive\\Documentos\\GitHub\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj": {
+    "C:\\Users\\Kmilo\\OneDrive\\Documentos\\SENSORPOLAR\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\aspet\\OneDrive\\Documentos\\GitHub\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj",
+        "projectUniqueName": "C:\\Users\\Kmilo\\OneDrive\\Documentos\\SENSORPOLAR\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj",
         "projectName": "puente-polar",
-        "projectPath": "C:\\Users\\aspet\\OneDrive\\Documentos\\GitHub\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj",
-        "packagesPath": "C:\\Users\\aspet\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\aspet\\OneDrive\\Documentos\\GitHub\\PlataformaGestiondeDatosSensor\\puente\\obj\\",
+        "projectPath": "C:\\Users\\Kmilo\\OneDrive\\Documentos\\SENSORPOLAR\\PlataformaGestiondeDatosSensor\\puente\\puente.csproj",
+        "packagesPath": "C:\\Users\\Kmilo\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Kmilo\\OneDrive\\Documentos\\SENSORPOLAR\\PlataformaGestiondeDatosSensor\\puente\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\aspet\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Kmilo\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],

@@ -8,6 +8,7 @@ import { MedicionModule } from './medicion/medicion.module.js';
 import { IngestaModule } from './ingesta/ingesta.module.js';
 import { ConsultasModule } from './consultas/consultas.module.js';
 import { SeedModule } from './seed/seed.module.js';
+import { AuthModule } from './auth/auth.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { SeedModule } from './seed/seed.module.js';
     IngestaModule,
     ConsultasModule,
     SeedModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

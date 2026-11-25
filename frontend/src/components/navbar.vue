@@ -1,6 +1,13 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { estadoPuente, puenteDisponible, store } from '../store.js'
+import { esProfesor, logout, sesion } from '../auth.js'
+
+const router = useRouter()
+function salir() {
+  logout()
+  router.replace({ name: 'Login' })
+}
 </script>
 
 <template>
@@ -14,29 +21,33 @@ import { estadoPuente, puenteDisponible, store } from '../store.js'
       <RouterLink to="/" class="nav-link">
         <span class="icono"></span> Inicio
       </RouterLink>
-      <RouterLink to="/grabacion" class="nav-link">
+      <RouterLink v-if="esProfesor" to="/grabacion" class="nav-link">
         <span class="icono"></span> Grabación en Vivo
         <span v-if="store.estado?.midiendo && !store.errores.estado" class="rec-dot" aria-label="Grabación en curso"></span>
       </RouterLink>
       <RouterLink to="/sesiones" class="nav-link">
-        <span class="icono"></span> Sesiones y Reportes
+        <span class="icono"></span> {{ esProfesor ? 'Sesiones y Reportes' : 'Mis sesiones' }}
       </RouterLink>
-      <RouterLink to="/dispositivos" class="nav-link">
+      <RouterLink v-if="esProfesor" to="/dispositivos" class="nav-link">
         <span class="icono"></span> Sensores
       </RouterLink>
-      <RouterLink to="/puente" class="nav-link">
+      <RouterLink v-if="esProfesor" to="/puente" class="nav-link">
         <span class="icono"></span> Puente Polar
       </RouterLink>
     </nav>
 
     <div class="sidebar-footer">
       <div class="estado-sistema">
-        <div class="indicador-puente" :class="{ disponible: puenteDisponible }">
+        <div v-if="esProfesor" class="indicador-puente" :class="{ disponible: puenteDisponible }">
           <span class="punto-estado"></span>
           <span>{{ estadoPuente }}</span>
         </div>
       </div>
       <p class="version">v1.2.0 · Polar BLE</p>
+      <div class="usuario">
+        <span class="usuario-nombre">{{ sesion.usuario?.correo ?? sesion.usuario?.Nombre }} · {{ esProfesor ? 'Profesor' : 'Alumno' }}</span>
+        <button type="button" class="btn-salir" @click="salir">Cerrar sesión</button>
+      </div>
     </div>
   </aside>
 </template>
@@ -165,6 +176,20 @@ import { estadoPuente, puenteDisponible, store } from '../store.js'
   font-size: 0.72rem;
   margin: 0;
 }
+
+.usuario { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.4rem; }
+.usuario-nombre { font-size: 0.75rem; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; }
+.btn-salir {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-salir:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 
 @media (max-width: 760px) {
   .sidebar { position: static; width: 100%; height: auto; }

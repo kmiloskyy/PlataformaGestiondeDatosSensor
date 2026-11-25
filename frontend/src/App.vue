@@ -1,16 +1,24 @@
 <script setup>
-import { onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount, watch } from 'vue'
 import Navbar from './components/navbar.vue'
-import { RouterView } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import { sondear } from './store.js'
+import { esProfesor } from './auth.js'
 
+const route = useRoute()
+
+// El estado de grabación solo lo puede consultar el profesor; se sondea mientras haya un profesor con sesión iniciada.
 let detener
-onMounted(() => { detener = sondear('estado') })
+watch(esProfesor, (activo) => {
+  detener?.()
+  detener = activo ? sondear('estado') : undefined
+}, { immediate: true })
 onBeforeUnmount(() => detener?.())
 </script>
 
 <template>
-  <div class="app-container">
+  <RouterView v-if="route.name === 'Login'" />
+  <div v-else class="app-container">
     <!-- El Navbar ahora actuará como menú lateral -->
     <Navbar />
     

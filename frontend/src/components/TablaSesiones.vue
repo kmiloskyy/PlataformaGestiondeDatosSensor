@@ -34,10 +34,10 @@ const resumen = (muestras) => Object.entries(muestras).map(([clave, cantidad]) =
           <td>
             <div class="acciones-sesion">
               <button type="button" class="secundario" :aria-pressed="sesion.id_sesion === seleccionada" @click="$emit('ver', sesion.id_sesion)">Ver informe</button>
-              <a :href="api.urlJson(sesion.id_sesion)">JSON</a>
+              <a href="#" @click.prevent="api.descargarJson(sesion.id_sesion).catch((e) => alert(e.message))">JSON</a>
             </div>
             <div class="acciones-sesion">
-              <a v-for="clave in Object.keys(sesion.muestras ?? {})" :key="clave" :href="api.urlCsv(sesion.id_sesion, clave)">CSV {{ clave.toUpperCase() }}</a>
+              <a v-for="clave in Object.keys(sesion.muestras ?? {})" :key="clave" :href="'#'" @click.prevent="api.descargarCsv(sesion.id_sesion, clave).catch((e) => alert(e.message))">CSV {{ clave.toUpperCase() }}</a>
             </div>
           </td>
         </tr>

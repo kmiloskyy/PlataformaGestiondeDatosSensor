@@ -5,6 +5,7 @@ import { MuestreoDatos } from '../entities/muestreodatos.entity.js';
 import { SesionGrabacion } from '../entities/sesiongrabacion.entity.js';
 import { SujetoEstudio } from '../entities/sujeto-estudio.entity.js';
 import { MedicionService } from '../medicion/medicion.service.js';
+import { esProfesor, type UsuarioActual } from '../auth/auth.types.js';
 import { CLAVES, DATOS_MUESTRAS, esClave, type ClaveDato } from '../datos/catalogo.js';
 import { armarLecturas } from '../datos/exportacion.js';
 
@@ -52,8 +53,12 @@ export class ConsultasService {
       ORDER BY sensor.id_sensor`);
   }
 
-  async listarSesiones() {
-    const filas = await this.sesiones.find({ relations: { sujeto: true, vinculaciones: { sensor: true } }, order: { id_sesion: 'DESC' } });
+  /** El profesor ve todas las sesiones; el alumno, solo las suyas. */
+  async listarSesiones(usuario: UsuarioActual) {
+    const filas = await this.sesiones.find({
+      where: esProfesor(usuario) ? {} : { id_sujeto: usuario.id_sujeto },
+      relations: { sujeto: true, vinculaciones: { sensor: true } }, order: { id_sesion: 'DESC' },
+    });
     const cuentas: { id_sesion: number; tipo_dato: string; n: number }[] = await this.ds.query(`
       SELECT v.id_sesion, m.tipo_dato, COUNT(*)::int AS n FROM "Muestreo_datos" m
       JOIN "Vinculacion" v ON v.id_vinculacion = m.id_vinculacion GROUP BY v.id_sesion, m.tipo_dato`);
@@ -71,15 +76,16 @@ export class ConsultasService {
     return (s.datos_seleccionados ?? []).filter(esClave);
   }
 
-  private async sesion(id: number): Promise<SesionGrabacion> {
+  /** Un alumno que pide la sesión de otro recibe el mismo 404 que si no existiera. */
+  private async sesion(id: number, usuario: UsuarioActual): Promise<SesionGrabacion> {
     const s = await this.sesiones.findOne({ where: { id_sesion: id }, relations: { sujeto: true } });
-    if (!s) throw new NotFoundException({ ok: false, errores: ['sesión no encontrada'] });
+    if (!s || (!esProfesor(usuario) && s.id_sujeto !== usuario.id_sujeto)) throw new NotFoundException({ ok: false, errores: ['sesión no encontrada'] });
     return s;
   }
 
   /** JSON completo de una sesión: todas las muestras crudas, desglosadas, de los datos elegidos. */
-  async exportarSesion(id: number) {
-    const s = await this.sesion(id);
+  async exportarSesion(id: number, usuario: UsuarioActual) {
+    const s = await this.sesion(id, usuario);
     const datos = this.datosDe(s);
     const filas = await this.muestras.createQueryBuilder('m').innerJoin('m.vinculacion', 'v').where('v.id_sesion = :id', { id })
       .orderBy('m.timestamp', 'ASC').addOrderBy('m.id_lectura', 'ASC').getMany();
@@ -97,8 +103,8 @@ export class ConsultasService {
   }
 
   /** Datos de una ventana de tiempo para graficar, reducidos a ~max puntos por serie (la exportación sigue siendo completa). */
-  async series(id: number, desdeQ?: string, hastaQ?: string, maxQ?: string) {
-    const s = await this.sesion(id);
+  async series(id: number, usuario: UsuarioActual, desdeQ?: string, hastaQ?: string, maxQ?: string) {
+    const s = await this.sesion(id, usuario);
     const fecha = (v: string | undefined, def: Date) => { const t = v ? Date.parse(v) : NaN; return Number.isNaN(t) ? def : new Date(t); };
     const desde = fecha(desdeQ, s.fecha_inicio);
     const hasta = fecha(hastaQ, s.fecha_fin ?? new Date());
@@ -124,8 +130,8 @@ export class ConsultasService {
   }
 
   /** CSV de un dato de una sesión: fc, rr, acc, gyro, mag, ppg o ppi. */
-  async csv(id: number, dato: string): Promise<{ nombre: string; texto: string }> {
-    await this.sesion(id);
+  async csv(id: number, dato: string, usuario: UsuarioActual): Promise<{ nombre: string; texto: string }> {
+    await this.sesion(id, usuario);
     const def = esClave(dato) && dato !== 'fc' ? DATOS_MUESTRAS[dato] : null;
     let cols: { enc: string; col: string }[];
     let tipo: string;

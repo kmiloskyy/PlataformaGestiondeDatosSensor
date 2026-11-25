@@ -1,5 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router'
+import { esProfesor } from '../src/auth.js'
 </script>
 
 <template>
@@ -13,8 +14,8 @@ import { RouterLink } from 'vue-router'
       </p>
       <div class="hero-acciones">
         <!-- Se corrigieron las rutas de los botones -->
-        <RouterLink to="/grabacion" class="btn-primary">▶ Iniciar Grabación</RouterLink>
-        <RouterLink to="/sesiones" class="btn-outline">Ver Mis Sesiones</RouterLink>
+        <RouterLink v-if="esProfesor" to="/grabacion" class="btn-primary">▶ Iniciar Grabación</RouterLink>
+        <RouterLink to="/sesiones" class="btn-outline">{{ esProfesor ? 'Ver Sesiones' : 'Ver Mis Sesiones' }}</RouterLink>
       </div>
     </section>
 

@@ -37,10 +37,11 @@ export class ConsultasService {
   listarSensores() {
     return this.ds.query(`
       SELECT sensor.id_sensor, sensor."Nombre_dispositivo" AS nombre, sensor."direccion_MAC" AS direccion_mac,
-        sensor.tipo, vinculacion.id_sesion, vinculacion.sujeto, vinculacion.fecha_vinculacion, vinculacion.fecha_desvinculacion
+        sensor.tipo, vinculacion.id_sesion, vinculacion.sujeto, vinculacion.ubicacion,
+        vinculacion.fecha_vinculacion, vinculacion.fecha_desvinculacion
       FROM "Sensor" sensor
       LEFT JOIN LATERAL (
-        SELECT v.id_sesion, sujeto."Nombre" AS sujeto, v."fecha_vinculación" AS fecha_vinculacion,
+        SELECT v.id_sesion, sujeto."Nombre" AS sujeto, sesion.ubicacion, v."fecha_vinculación" AS fecha_vinculacion,
           v."Fecha_desvinculacion" AS fecha_desvinculacion
         FROM "Vinculacion" v
         JOIN "Sesion_Grabacion" sesion ON sesion.id_sesion = v.id_sesion
@@ -60,6 +61,7 @@ export class ConsultasService {
       id_sesion: s.id_sesion, id_sujeto: s.id_sujeto, sujeto: s.sujeto?.Nombre ?? null, nombre_sesion: s.Nombre_sesion,
       estado_sesion: s.estado_sesion, fecha_inicio: s.fecha_inicio, fecha_fin: s.fecha_fin,
       datos: this.datosDe(s),
+      direccion_mac: s.direccion_mac, ubicacion: s.ubicacion,
       sensores: (s.vinculaciones ?? []).flatMap(({ sensor }) => sensor ? [sensor.Nombre_dispositivo] : []),
       muestras: Object.fromEntries(cuentas.filter((c) => c.id_sesion === s.id_sesion).map((c) => [c.tipo_dato, c.n])),
     }));
@@ -87,6 +89,7 @@ export class ConsultasService {
     for (const k of datos) if (k !== 'fc') unidades[DATOS_MUESTRAS[k].arreglo] = DATOS_MUESTRAS[k].unidad;
     return {
       id_sesion: s.id_sesion, nombre_sesion: s.Nombre_sesion, id_sujeto: s.id_sujeto, sujeto: s.sujeto?.Nombre ?? null,
+      direccion_mac: s.direccion_mac, ubicacion: s.ubicacion,
       fecha_inicio: s.fecha_inicio, fecha_fin: s.fecha_fin, estado_sesion: s.estado_sesion, datos, unidades,
       total_muestras: totales,
       lecturas: armarLecturas(filas, datos),
@@ -138,9 +141,24 @@ export class ConsultasService {
     return { nombre: `sesion-${id}-${dato}.csv`, texto };
   }
 
+  /** Resumen de todas las grabaciones activas para el monitor, en una sola consulta. */
+  lecturasActivas() {
+    const ids = this.medicion.idsActivos();
+    if (!ids.length) return [];
+    return this.ds.query(`
+      SELECT v.id_sesion, MAX(m.timestamp) AS ultima_lectura,
+        (ARRAY_AGG(m.frecuencia_cardiaca ORDER BY m.timestamp DESC, m.id_lectura DESC)
+          FILTER (WHERE m.tipo_dato = 'fc' AND m.frecuencia_cardiaca > 0))[1] AS frecuencia_cardiaca
+      FROM "Vinculacion" v
+      JOIN "Muestreo_datos" m ON m.id_vinculacion = v.id_vinculacion
+      WHERE v.id_sesion = ANY($1) AND m.timestamp > now() - interval '5 seconds'
+      GROUP BY v.id_sesion`, [ids]);
+  }
+
   /** Lo último que llegó (alimenta el panel de lecturas en vivo). */
-  async ultimo() {
-    const activa = this.medicion.getActiva();
+  async ultimo(id?: number) {
+    const activa = this.medicion.getActiva(id);
+    if (id != null && !activa) return { id_sesion: id, paquete: null };
     const filtro = activa ? 'AND v.id_sesion = $1' : '';
     const params = activa ? [activa.id_sesion] : [];
     const base = `FROM "Muestreo_datos" m JOIN "Vinculacion" v ON v.id_vinculacion = m.id_vinculacion WHERE true ${filtro}`;

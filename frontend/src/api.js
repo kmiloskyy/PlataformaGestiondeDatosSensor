@@ -11,12 +11,13 @@ const post = (url, cuerpo) =>
 
 export const api = {
   estado: () => pedir('/api/medicion'),
-  iniciar: (id_sujeto, datos, nombre_sesion) => post('/api/medicion', { id_sujeto, datos, nombre_sesion }),
+  iniciar: (asignaciones, datos, nombre_sesion) => post('/api/medicion', { asignaciones, datos, nombre_sesion }),
   detener: () => post('/api/medicion', { midiendo: false }),
   sujetos: () => pedir('/api/sujetos'),
   sensores: () => pedir('/api/sensores'),
   sesiones: () => pedir('/api/sesiones'),
-  ultimo: () => pedir('/api/ultimo'),
+  ultimo: (id) => pedir(`/api/ultimo?id_sesion=${id}`),
+  lecturasActivas: () => pedir('/api/lecturas-activas'),
   series: (id, desde, hasta, max = 1500) =>
     pedir(`/api/sesiones/${id}/series?desde=${new Date(desde).toISOString()}&hasta=${new Date(hasta).toISOString()}&max=${max}`),
   urlJson: (id) => `/api/sesiones/${id}?descargar=1`,

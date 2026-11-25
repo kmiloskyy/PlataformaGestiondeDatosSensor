@@ -48,6 +48,42 @@ export function validarPaquete(b: unknown): string[] {
 
 export interface InicioSesion { id_sujeto: number; datos: ClaveDato[]; nombre_sesion?: string }
 
+export function normalizarMac(valor: unknown): string | null {
+  if (typeof valor !== 'string') return null;
+  const hex = valor.trim().replace(/[:-]/g, '').toUpperCase();
+  return /^[0-9A-F]{12}$/.test(hex) ? hex.match(/../g)!.join(':') : null;
+}
+
+export interface AsignacionSensor {
+  direccion_mac: string;
+  id_sujeto: number;
+  ubicacion: string | null;
+}
+
+export function validarAsignaciones(asignaciones: unknown): { errores: string[]; valor: AsignacionSensor[] } {
+  if (!Array.isArray(asignaciones) || asignaciones.length === 0) {
+    return { errores: ['selecciona al menos un sensor para grabar'], valor: [] };
+  }
+  const errores: string[] = [];
+  const valor: AsignacionSensor[] = [];
+  const vistas = new Set<string>();
+  for (const [i, asignacion] of asignaciones.entries()) {
+    const mac = normalizarMac(asignacion?.direccion_mac);
+    const id = asignacion?.id_sujeto;
+    const ubicacion = asignacion?.ubicacion;
+    if (!mac || !Number.isSafeInteger(id) || id <= 0 ||
+        (ubicacion != null && (typeof ubicacion !== 'string' || ubicacion.length > 80))) {
+      errores.push(`asignación ${i + 1}: indica una MAC válida, un sujeto y una ubicación de hasta 80 caracteres`);
+    } else if (vistas.has(mac)) {
+      errores.push(`el sensor ${mac} está asignado más de una vez`);
+    } else {
+      vistas.add(mac);
+      valor.push({ direccion_mac: mac, id_sujeto: id, ubicacion: ubicacion?.trim() || null });
+    }
+  }
+  return { errores, valor };
+}
+
 export function validarInicio(b: unknown): { errores: string[]; valor?: InicioSesion } {
   if (!esObjeto(b)) return { errores: ['cuerpo vacío o no es JSON'] };
   const errores: string[] = [];

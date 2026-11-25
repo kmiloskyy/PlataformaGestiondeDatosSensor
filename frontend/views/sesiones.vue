@@ -10,7 +10,7 @@ const seleccion = ref(null)
 const informe = ref(null)
 const sesiones = computed(() => (store.sesiones ?? []).filter((sesion) => {
   const termino = busqueda.value.trim().toLocaleLowerCase()
-  return [sesion.nombre_sesion, sesion.sujeto, String(sesion.id_sesion)].some((valor) =>
+  return [sesion.nombre_sesion, sesion.sujeto, sesion.ubicacion, sesion.direccion_mac, String(sesion.id_sesion)].some((valor) =>
     valor?.toLocaleLowerCase().includes(termino))
 }))
 const sesion = computed(() => store.sesiones?.find((s) => s.id_sesion === seleccion.value) ?? null)
@@ -38,7 +38,7 @@ function imprimir() { window.print() }
       <section class="card full historial">
         <div class="controles">
           <label for="buscar-sesion">Buscar sesión</label>
-          <input id="buscar-sesion" v-model="busqueda" type="search" placeholder="Nombre, sujeto o número" />
+          <input id="buscar-sesion" v-model="busqueda" type="search" placeholder="Nombre, sujeto, ubicación o MAC" />
           <RouterLink to="/grabacion">Nueva grabación</RouterLink>
         </div>
         <p v-if="store.errores.sesiones" class="estado err" role="alert">No se pudieron consultar las sesiones.</p>

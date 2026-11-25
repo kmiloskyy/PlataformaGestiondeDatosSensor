@@ -14,13 +14,17 @@ const resumen = (muestras) => Object.entries(muestras).map(([clave, cantidad]) =
   <div class="tabla-scroll">
     <table>
       <thead>
-        <tr><th>Sesión</th><th>Sujeto</th><th>Sensor</th><th>Inicio y fin</th><th>Muestras guardadas</th><th>Acciones</th></tr>
+        <tr><th>Sesión</th><th>Sujeto</th><th>Sensor</th><th>Ubicación</th><th>Inicio y fin</th><th>Muestras guardadas</th><th>Acciones</th></tr>
       </thead>
       <tbody>
         <tr v-for="sesion in sesiones" :key="sesion.id_sesion">
           <th scope="row">{{ sesion.nombre_sesion || `Sesión #${sesion.id_sesion}` }}</th>
           <td>{{ sesion.sujeto || '—' }}</td>
-          <td>{{ sesion.sensores?.join(', ') || '—' }}</td>
+          <td>
+            {{ sesion.sensores?.join(', ') || (sesion.direccion_mac ? 'Polar' : '—') }}
+            <template v-if="sesion.direccion_mac"><br />{{ sesion.direccion_mac }}</template>
+          </td>
+          <td>{{ sesion.ubicacion || '—' }}</td>
           <td>
             {{ fecha(sesion.fecha_inicio) }}<br />
             <span v-if="sesion.fecha_fin">{{ fecha(sesion.fecha_fin) }}</span>

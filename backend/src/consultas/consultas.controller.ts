@@ -35,5 +35,8 @@ export class ConsultasController {
   }
 
   @Get('ultimo')
-  ultimo() { return this.consultas.ultimo(); }
+  ultimo(@Query('id_sesion', new ParseIntPipe({ optional: true })) id?: number) { return this.consultas.ultimo(id); }
+
+  @Get('lecturas-activas')
+  lecturasActivas() { return this.consultas.lecturasActivas(); }
 }

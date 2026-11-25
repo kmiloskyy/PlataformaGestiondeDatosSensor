@@ -7,7 +7,7 @@
 
 ## 0. Resumen en un minuto
 
-**Qué es.** Un sistema que lee **todos los datos que entrega un sensor Polar Verity Sense** (frecuencia cardíaca, acelerómetro, giroscopio, magnetómetro, PPG óptico y PPI), los **guarda en bruto** en PostgreSQL y los muestra en una web.
+**Qué es.** Un sistema que lee señales de uno o varios Polar Verity Sense (frecuencia cardíaca, acelerómetro, giroscopio, magnetómetro, PPG óptico y PPI), las guarda en bruto en PostgreSQL y las muestra en una web.
 
 **Cómo funciona, en cuatro piezas:**
 
@@ -121,18 +121,18 @@ bytes 10…   las muestras
 
 **Ciclo de vida:**
 
-1. Busca el dispositivo "Polar" ya emparejado en Windows y se conecta (si Windows aún lo tiene tomado, reintenta hasta 60 s: error `AccessDenied`).
-2. Activa la suscripción a la frecuencia cardíaca y a los canales PMD, pero **no empieza a medir nada**.
-3. **Cada segundo pregunta a la API** `GET /api/medicion?puente=1`. Si aparece una sesión nueva, **activa en el sensor solo los datos elegidos**; si la sesión se detuvo, los apaga.
-4. **Cada segundo envía un paquete** `POST /api/telemetria` con todo lo recibido en ese segundo.
+1. Busca todos los dispositivos "Polar" emparejados en Windows y abre una conexión por sensor. Una conexión perdida se reintenta de forma independiente.
+2. Suscribe los canales Bluetooth de cada sensor y espera a que la web inicie la grabación.
+3. Consulta `GET /api/medicion?puente=1&direccion_mac=…&dispositivo=…` por cada MAC. Activa las señales de la sesión asignada a esa MAC y las apaga cuando se detiene.
+4. Envía un paquete `POST /api/telemetria` por sensor y segundo, identificado por MAC e ID de sesión.
 5. Informa a la API qué datos pudo activar y cuáles no (y el motivo) con `POST /api/puente`, para que la web lo muestre.
 
 **Decisiones del puente:**
 
 * **No procesa nada (D-02).** Envía incluso el 0 de la frecuencia cardíaca. Antes tenía una estimación de FC a partir del PPI; se **eliminó** del puente porque esa clase de cálculo corresponde al backend.
 * **Paquete cada segundo (D-03):** un envío por muestra (≈ 300/s) saturaría la red; un envío por segundo es un buen equilibrio entre latencia y eficiencia.
-* **Si el servidor rechaza o no responde, no se pierden muestras:** se reencolan (con tope de 6000 por dato).
-* **Se identifica al sensor por su dirección MAC**, que se extrae del identificador de Windows.
+* **Reintentos de envío:** si hay un error de red o del servidor, el puente reencola hasta 4000 muestras PMD por señal y sensor para la misma sesión.
+* **Identidad del sensor:** se usa la dirección Bluetooth que informa Windows.
 
 ---
 
@@ -164,9 +164,9 @@ Todos cuelgan de `/api`.
 
 | Método y ruta | Quién la usa | Qué hace |
 |---|---|---|
-| `POST /medicion` `{id_sujeto, datos:[…]}` | Web | **Inicia** una sesión eligiendo qué datos medir |
-| `POST /medicion` `{midiendo:false}` | Web | **Detiene** la sesión |
-| `GET /medicion` | Web y puente | Estado: ¿hay sesión?, ¿qué datos?, ¿el puente está vivo? |
+| `POST /medicion` `{asignaciones:[{direccion_mac,id_sujeto,ubicacion}], datos:[…]}` | Web | Inicia una sesión por sensor en una operación |
+| `POST /medicion` `{midiendo:false}` | Web | Finaliza la grabación de todos los sensores activos |
+| `GET /medicion` | Web y puente | Lista las sesiones y conexiones en la web. Con `puente=1&direccion_mac=…`, devuelve la sesión asignada a esa MAC |
 | `POST /puente` | Puente | Informa el dispositivo, su MAC y las señales que pudo activar |
 | `POST /telemetria` | Puente | **Entrega un paquete crudo** (201 guardado · 202 ignorado · 400 inválido) |
 | `GET /sujetos` | Web | Lista sujetos (solo id y nombre; nunca RUT, peso ni contraseña) |
@@ -175,7 +175,8 @@ Todos cuelgan de `/api`.
 | `GET /sesiones/:id` | Usuario | **JSON completo** de la sesión (`?descargar=1` lo baja como archivo) |
 | `GET /sesiones/:id/series` | Web | Datos de una ventana de tiempo para graficar |
 | `GET /sesiones/:id/csv/:dato` | Usuario | CSV de un dato (`fc`, `rr`, `acc`, `gyro`, `mag`, `ppg`, `ppi`) |
-| `GET /ultimo` | Web | Lo último que llegó (lpm grande y panel "Así llegan los datos") |
+| `GET /ultimo?id_sesion=…` | Web | Últimas lecturas de una sesión activa |
+| `GET /lecturas-activas` | Web | Última muestra y frecuencia cardíaca reciente de cada sesión activa |
 
 ### 4.3 El contrato del paquete (lo que envía el puente)
 
@@ -200,26 +201,17 @@ Solo vienen los arreglos de los datos que se eligieron al iniciar la sesión.
 ### 4.4 Qué pasa en una sesión (secuencia)
 
 ```
-Web                      API (Nest)                        Puente                    Sensor
- │ POST /medicion          │                                  │                          │
- │ {sujeto, datos}  ─────► │ crea Sesion_Grabacion            │                          │
- │                         │ (estado 'en_curso')              │                          │
- │                         │ ◄──────── GET /medicion?puente=1 │ (cada segundo)           │
- │                         │ ───────► {midiendo, id_sesion,   │                          │
- │                         │           datos:[acc, gyro…]}    │ ── 02 <tipo> ─────────►  │ empieza a medir
- │                         │                                  │ ◄──── muestras crudas ── │
- │                         │ ◄──── POST /telemetria (1/seg) ──│                          │
- │                         │ valida → crea Sensor+Vinculación │                          │
- │                         │ (1ª vez) → inserta filas         │                          │
- │ POST /medicion          │                                  │                          │
- │ {midiendo:false} ─────► │ cierra sesión y vinculación      │                          │
- │                         │ ◄──────── GET /medicion?puente=1 │ ── 03 <tipo> ─────────►  │ deja de medir
+Web ── POST /medicion con asignaciones ──► API crea una sesión por MAC con la misma hora de inicio
+Puente ── GET /medicion con la MAC ──► API devuelve la sesión y las señales de ese sensor
+Puente ── POST /telemetria con MAC y sesión ──► API valida la asignación y guarda las muestras
+Web ── POST /medicion con midiendo:false ──► API cierra todas las sesiones y vinculaciones activas
 ```
 
 ### 4.5 Decisiones de la API
 
 * **La sesión manda (D-04).** Elegir qué medir es una propiedad de la sesión y se fija **antes de iniciar**; durante la sesión no cambia. Así cada sesión es un conjunto coherente de datos. Se guarda en `Sesion_Grabacion.datos_seleccionados`.
-* **El estado "hay una sesión activa" vive en memoria** del servidor (una sesión a la vez, un sensor). Es la solución más simple para el alcance actual. Si el servidor se cae, al arrancar **cierra** las sesiones que quedaron abiertas en el último dato guardado.
+* Las sesiones activas se mantienen en memoria, una por MAC. El inicio y cierre del conjunto se guardan en transacciones. Si el servidor se reinicia, cierra las sesiones abiertas en el último dato guardado.
+* La sesión guarda el sujeto, la MAC y la ubicación opcional en el cuerpo. Un sujeto puede tener sensores en ubicaciones distintas con sesiones independientes.
 * **Qué pasa con paquetes de una sesión ya detenida:** se responde **202 y se descartan** (los últimos < 1 s en vuelo se pierden).
 * **El sensor se registra solo (D-10):** con el primer paquete se busca el sensor por MAC; si no existe, se crea en `Sensor`, y se crea la `Vinculacion` sensor↔sesión. Se cierra al detener.
 * **La validación está escrita a mano (D-09)** como funciones puras (`datos/validacion.ts`): no agrega dependencias, replica la validación del prototipo y se prueba fácilmente. Cambiar a un validador con esquemas (Zod, por ejemplo) sería posible sin tocar el resto.
@@ -299,7 +291,7 @@ Ejemplo (una sesión de 1 segundo con acelerómetro y FC):
 | `components/GraficoSerie.vue` | Un gráfico (Chart.js) de un dato |
 | `components/TablaSesiones.vue` | Sesiones con enlaces a gráfico, JSON y CSV por dato |
 
-**Grabación en vivo** inicia y detiene sesiones. **Sensores** muestra el dispositivo informado por Puente y la última vinculación de cada sensor. **Sesiones y reportes** consulta y exporta las grabaciones guardadas. **Puente Polar** muestra el diagnóstico de conexión.
+**Grabación en vivo** inicia y detiene el conjunto de sensores y permite revisar las señales de cada uno. **Sensores** permite asignar el sujeto y la ubicación de los Polar detectados. **Sesiones y reportes** consulta y exporta cada grabación. **Puente Polar** muestra las conexiones Bluetooth y los errores por sensor.
 
 **Decisiones:**
 * **D-12 — Sondeo (*polling*) en vez de WebSockets:** la pantalla consulta el estado y las lecturas en vivo aproximadamente cada segundo.
@@ -315,7 +307,7 @@ Ejemplo (una sesión de 1 segundo con acelerómetro y FC):
 | **D-01** | El Bluetooth lo maneja un **puente nativo**, no el navegador | Web Bluetooth no ve sensores ya emparejados en Windows y puede estar deshabilitado; además da acceso al protocolo PMD completo | Hay un programa más que ejecutar (solo Windows) |
 | **D-02** | **Solo datos crudos** en puente y API; cálculos en el backend, después | Los datos crudos no se pueden recuperar si se promedian; los cálculos se pueden rehacer cuando se quiera | Hay que construir luego el módulo de análisis (ver §9) |
 | **D-03** | Un paquete por segundo con arreglos de muestras | Equilibrio entre latencia y eficiencia; el paquete se guarda en una transacción | Se pierde como máximo ~1 s al detener |
-| **D-04** | Sesión = unidad de medición; datos elegidos antes de iniciar; estado activo en memoria | Sesiones coherentes y simples; el puente solo necesita preguntar una cosa | Una sesión a la vez, un sensor |
+| **D-04** | Una sesión por MAC y sujeto, con señales comunes para el conjunto activo | Se conservan las lecturas independientes de cada dispositivo | Inicio y cierre del conjunto desde la web |
 | **D-05** | `Muestreo_datos`: una fila por muestra, columnas opcionales + `tipo_dato` | Los sensores tienen frecuencias distintas; no inventar datos | Muchos `NULL`; ver §5.3 |
 | **D-06** | Catálogo único de datos | Un solo lugar donde se define cada sensor | Agregar sensores es barato |
 | **D-07** | `timestamptz`; guardar `sensor_ns`; paso real entre muestras | Tiempo sin ambigüedad y reconstruible | El PPI tiene hora aproximada |
@@ -367,7 +359,7 @@ Ejemplo (una sesión de 1 segundo con acelerómetro y FC):
 * **Este sensor no envía intervalos RR** en el servicio estándar de FC.
 
 **Límites del sistema actual:**
-* Una sesión y un sensor a la vez. El puente es solo para Windows.
+* El puente funciona en Windows. La capacidad simultánea depende del adaptador Bluetooth y de las señales seleccionadas.
 * La API **no tiene autenticación**: cualquiera con acceso a la red puede iniciar sesiones y leer datos. Debe agregarse antes de usarlo fuera de un entorno controlado.
 * `synchronize: true` modifica el esquema al arrancar: útil en desarrollo, **no apto para producción** (usar migraciones de TypeORM).
 * Al detener se pierden los últimos < 1 s en vuelo.
@@ -398,7 +390,7 @@ Ejemplo (una sesión de 1 segundo con acelerómetro y FC):
 
 **¿Por qué la frecuencia cardíaca a veces es 0?** Es lo que informa el sensor cuando no tiene lectura (contacto flojo o mientras corre el análisis PPI). Se guarda tal cual y no se dibuja.
 
-**¿Se puede agregar otro sensor?** Sí: una entrada en `datos/catalogo.ts`, sus columnas en `Muestreo_datos` y, si es un sensor Polar, su formato en el puente.
+**¿Se puede agregar otro Polar?** Empareja el dispositivo en Windows, reinicia Puente Polar y asígnalo en **Sensores**.
 
 ---
 

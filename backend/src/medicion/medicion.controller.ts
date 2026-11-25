@@ -5,13 +5,13 @@ import { MedicionService } from './medicion.service.js';
 export class MedicionController {
   constructor(private readonly medicion: MedicionService) {}
 
-  /** Estado actual. El puente lo consulta con ?puente=1 (así sabemos que está vivo). */
+  /** Con MAC, cada conexión del puente recibe solamente su propia sesión. */
   @Get('medicion')
-  estado(@Query('puente') puente?: string) {
-    return this.medicion.estado(!!puente);
+  estado(@Query('puente') puente?: string, @Query('direccion_mac') mac?: string, @Query('dispositivo') dispositivo?: string) {
+    return puente ? this.medicion.estadoParaPuente(mac, dispositivo) : this.medicion.estado();
   }
 
-  /** Iniciar: { id_sujeto, datos: ['fc','acc',...], nombre_sesion? }  ·  Detener: { midiendo: false } */
+  /** Inicia un conjunto de asignaciones o finaliza todas las sesiones activas. */
   @Post('medicion')
   async cambiar(@Body() body: Record<string, unknown>) {
     if (body?.midiendo === false) return this.medicion.detener();

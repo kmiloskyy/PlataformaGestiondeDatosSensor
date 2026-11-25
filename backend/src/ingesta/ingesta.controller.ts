@@ -8,7 +8,7 @@ export class IngestaController {
 
   /**
    * Recibe un paquete crudo del puente (aprox. uno por segundo con todo lo que llegó del sensor).
-   * 201 = guardado · 202 = ignorado porque la sesión ya no está activa · 400 = paquete inválido.
+   * 201 = guardado · 202 = sesión inactiva o sensor no asignado · 400 = paquete inválido.
    */
   @Post('telemetria')
   @HttpCode(201)
@@ -16,7 +16,7 @@ export class IngestaController {
     const r = await this.ingesta.guardar(body);
     if (r.ignorado) {
       res.status(202);
-      return { ok: true, ignorado: 'la sesión no está activa (medición detenida)' };
+      return { ok: true, ignorado: 'la sesión no está activa para ese sensor' };
     }
     return { ok: true, id_sesion: r.id_sesion, filas: r.filas };
   }

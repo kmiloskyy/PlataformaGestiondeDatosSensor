@@ -6,7 +6,7 @@ import { SesionGrabacion } from '../entities/sesiongrabacion.entity.js';
 import { Vinculacion } from '../entities/vinculacion.entity.js';
 import { MedicionService } from '../medicion/medicion.service.js';
 import { paqueteAFilas } from '../datos/mapeo.js';
-import { validarPaquete, type Paquete } from '../datos/validacion.js';
+import { normalizarMac, validarPaquete, type Paquete } from '../datos/validacion.js';
 
 const TAM_LOTE_INSERT = 1000; // 1000 filas x ~25 columnas = 25 000 parámetros < límite de 65 535 de PostgreSQL
 
@@ -27,8 +27,9 @@ export class IngestaService {
     const p = body as Paquete;
 
     // Si la sesión ya no está activa (se pulsó Detener), los últimos datos en vuelo se descartan.
-    const activa = this.medicion.getActiva();
-    if (!activa || activa.id_sesion !== p.id_sesion) return { ignorado: true };
+    const activa = this.medicion.getActiva(p.id_sesion);
+    const mac = normalizarMac(p.direccion_mac);
+    if (!activa || (activa.direccion_mac && activa.direccion_mac !== mac)) return { ignorado: true };
 
     return this.ds.transaction(async (em) => {
       // La fila de sesión también se bloquea al detener la grabación.
@@ -37,7 +38,8 @@ export class IngestaService {
       });
       if (sesion?.estado_sesion !== 'en_curso') return { ignorado: true };
 
-      const idVinculacion = await this.obtenerVinculacion(em, p);
+      const idVinculacion = await this.obtenerVinculacion(em, p, mac);
+      if (idVinculacion == null) return { ignorado: true };
       const filas = paqueteAFilas(p, idVinculacion);
       for (let i = 0; i < filas.length; i += TAM_LOTE_INSERT) {
         await em.insert(MuestreoDatos, filas.slice(i, i + TAM_LOTE_INSERT));
@@ -47,17 +49,20 @@ export class IngestaService {
   }
 
   /** Vinculación = "este sensor estuvo en esta sesión". Se crea con el primer paquete y se reutiliza. */
-  private async obtenerVinculacion(em: EntityManager, p: Paquete): Promise<number> {
+  private async obtenerVinculacion(em: EntityManager, p: Paquete, mac: string | null): Promise<number | null> {
     const vincs = em.getRepository(Vinculacion);
-    const existente = await vincs.findOneBy({ id_sesion: p.id_sesion });
-    if (existente) return existente.id_vinculacion;
+    const direccion = mac ?? (p.direccion_mac?.trim() || 'desconocida');
+    const existente = await vincs.findOne({ where: { id_sesion: p.id_sesion }, relations: { sensor: true } });
+    if (existente) {
+      const guardada = normalizarMac(existente.sensor.direccion_MAC) ?? existente.sensor.direccion_MAC;
+      return guardada === direccion ? existente.id_vinculacion : null;
+    }
 
     const sensores = em.getRepository(Sensor);
-    const mac = p.direccion_mac?.trim() || 'desconocida';
-    let sensor = await sensores.findOneBy({ direccion_MAC: mac });
+    let sensor = await sensores.findOneBy({ direccion_MAC: direccion });
     if (!sensor) {
       sensor = await sensores.save(sensores.create({
-        Nombre_dispositivo: p.dispositivo.trim(), Estado: 'conectado', direccion_MAC: mac, tipo: 'Polar Verity Sense',
+        Nombre_dispositivo: p.dispositivo.trim(), Estado: 'conectado', direccion_MAC: direccion, tipo: 'Polar Verity Sense',
       }));
     } else if (sensor.Estado !== 'conectado') {
       await sensores.update({ id_sensor: sensor.id_sensor }, { Estado: 'conectado' });

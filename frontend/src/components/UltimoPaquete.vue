@@ -3,9 +3,10 @@ import { computed, watch } from 'vue'
 import { explicarFc } from '../catalogo.js'
 import { sondear, store } from '../store.js'
 
-const idSesion = computed(() => !store.errores.estado && store.estado?.midiendo ? store.estado.id_sesion : null)
+const props = defineProps({ sesion: { type: Object, default: null } })
+const idSesion = computed(() => store.errores.estado ? null : props.sesion?.id_sesion)
 watch(idSesion, (id, _, alLimpiar) => {
-  if (id != null) alLimpiar(sondear('ultimo'))
+  if (id != null) alLimpiar(sondear('ultimo', 1000, id))
 }, { immediate: true })
 
 const lectura = computed(() => {
@@ -30,6 +31,7 @@ const json = computed(() => {
 <template>
   <section class="card">
     <h2>Últimas lecturas</h2>
+    <p v-if="sesion" class="estado">{{ sesion.sujeto }}<template v-if="sesion.ubicacion"> · {{ sesion.ubicacion }}</template></p>
     <div class="bpm">{{ bpm }} <small>lpm</small></div>
     <p v-if="store.errores.estado || (idSesion != null && store.errores.ultimo)" class="estado err" role="alert">No se pudieron consultar las lecturas.</p>
     <p v-else-if="idSesion == null" class="estado">Inicia una grabación para ver las lecturas.</p>

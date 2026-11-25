@@ -1,12 +1,13 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { api } from '../api.js'
-import { CONF, hora } from '../catalogo.js'
+import { CONF, NOMBRE, hora } from '../catalogo.js'
 import GraficoSerie from './GraficoSerie.vue'
 
 const props = defineProps({
   sesion: { type: Object, default: null },
   enVivo: Boolean,
+  erroresSensor: { type: Object, default: () => ({}) },
 })
 
 const ventana = ref(props.enVivo ? 60 : 0)
@@ -14,6 +15,7 @@ const posicion = ref(0)
 const resultado = ref(null)
 const error = ref('')
 const claves = computed(() => (props.sesion?.datos ?? []).filter((clave) => Object.hasOwn(CONF, clave)))
+const sinMuestras = computed(() => claves.value.filter((clave) => !resultado.value?.series[clave]?.length))
 const segundos = computed(() => {
   if (!props.sesion?.fecha_inicio || !resultado.value) return 0
   return Math.max(0, Math.round((resultado.value.fin - Date.parse(props.sesion.fecha_inicio)) / 1000))
@@ -93,6 +95,7 @@ onBeforeUnmount(() => {
     <template v-else>
       <p class="estado">
         #{{ sesion.id_sesion }} · {{ sesion.nombre_sesion || sesion.sujeto }}
+        <template v-if="sesion.ubicacion"> · {{ sesion.ubicacion }}</template>
         <template v-if="resultado"> · {{ segundos }} s registrados</template>
       </p>
       <div class="controles">
@@ -114,7 +117,7 @@ onBeforeUnmount(() => {
       <p v-if="error" class="estado err" role="alert">No se pudieron cargar las series. {{ error }}</p>
       <p v-else-if="!resultado" class="estado">Cargando las señales…</p>
       <div v-else>
-        <p v-if="!claves.some((clave) => resultado.series[clave]?.length)" class="estado">No hay muestras para mostrar en este tramo.</p>
+        <p v-if="sinMuestras.length" class="estado warn">Señales sin muestras en este tramo · {{ sinMuestras.map((clave) => NOMBRE[clave]).join(', ') }}</p>
         <GraficoSerie
           v-for="clave in claves.filter((k) => resultado.series[k]?.length)"
           :key="sesion.id_sesion + clave"
@@ -124,6 +127,7 @@ onBeforeUnmount(() => {
           :hasta="resultado.hasta"
         />
       </div>
+      <p v-for="(mensaje, clave) in erroresSensor" :key="clave" class="estado err">{{ NOMBRE[clave] ?? clave }} · {{ mensaje }}</p>
     </template>
   </section>
 </template>

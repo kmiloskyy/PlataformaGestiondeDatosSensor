@@ -13,6 +13,12 @@ export class SesionGrabacion {
   @Column()
   Nombre_sesion: string;
 
+  @Column({ type: 'varchar', length: 17, nullable: true })
+  direccion_mac: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  ubicacion: string | null;
+
   @Column({ type: 'timestamptz' })
   fecha_inicio: Date;
 
